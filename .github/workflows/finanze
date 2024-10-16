@@ -1,0 +1,275 @@
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlusCircle, MinusCircle, DollarSign, Calendar, TrendingUp, List } from 'lucide-react';
+
+const FinanceCalculator = () => {
+  const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
+  const [expenseName, setExpenseName] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseCadence, setExpenseCadence] = useState('monthly');
+  const [incomeName, setIncomeName] = useState('');
+  const [incomeAmount, setIncomeAmount] = useState('');
+  const [isTaxable, setIsTaxable] = useState(true);
+
+  const TAX_RATE = 0.4; // 40% di tasse
+
+  const addExpense = () => {
+    if (expenseName && expenseAmount && expenseCadence) {
+      setExpenses([...expenses, { 
+        id: Date.now(),
+        name: expenseName, 
+        amount: parseFloat(expenseAmount),
+        cadence: expenseCadence
+      }]);
+      setExpenseName('');
+      setExpenseAmount('');
+      setExpenseCadence('monthly');
+    }
+  };
+
+  const addIncome = () => {
+    if (incomeName && incomeAmount) {
+      const grossAmount = parseFloat(incomeAmount);
+      const netAmount = isTaxable ? grossAmount * (1 - TAX_RATE) : grossAmount;
+      setIncomes([...incomes, { 
+        id: Date.now(),
+        name: incomeName, 
+        grossAmount: grossAmount,
+        netAmount: netAmount,
+        isTaxable: isTaxable
+      }]);
+      setIncomeName('');
+      setIncomeAmount('');
+    }
+  };
+
+  const calculateMonthlyExpenses = () => {
+    return expenses.reduce((total, expense) => {
+      if (expense.cadence === 'monthly') {
+        return total + expense.amount;
+      } else {
+        return total + (expense.amount / 12);
+      }
+    }, 0);
+  };
+
+  const calculateAnnualExpenses = () => {
+    return expenses.reduce((total, expense) => {
+      if (expense.cadence === 'monthly') {
+        return total + (expense.amount * 12);
+      } else {
+        return total + expense.amount;
+      }
+    }, 0);
+  };
+
+  const calculateMonthlyIncome = () => {
+    return incomes.reduce((total, income) => total + income.netAmount / 12, 0);
+  };
+
+  const calculateAnnualIncome = () => {
+    return incomes.reduce((total, income) => total + income.netAmount, 0);
+  };
+
+  const getMonthlyDetails = () => {
+    const monthlyDetails = [];
+    
+    expenses.forEach(expense => {
+      const monthlyAmount = expense.cadence === 'monthly' ? expense.amount : expense.amount / 12;
+      monthlyDetails.push({
+        name: expense.name,
+        amount: -monthlyAmount,
+        type: 'Spesa'
+      });
+    });
+
+    incomes.forEach(income => {
+      const monthlyAmount = income.netAmount / 12;
+      monthlyDetails.push({
+        name: income.name,
+        amount: monthlyAmount,
+        type: 'Retribuzione'
+      });
+    });
+
+    return monthlyDetails.sort((a, b) => b.amount - a.amount);
+  };
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+      <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Calcolatrice Finanziaria</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-red-500 to-pink-500 text-white">
+            <CardTitle className="flex items-center text-xl">
+              <MinusCircle className="mr-2" />
+              Aggiungi Spesa
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="expenseName" className="text-sm font-medium text-gray-700">Nome Spesa</Label>
+                <Input 
+                  id="expenseName"
+                  value={expenseName} 
+                  onChange={(e) => setExpenseName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="expenseAmount" className="text-sm font-medium text-gray-700">Importo</Label>
+                <Input 
+                  id="expenseAmount"
+                  type="number" 
+                  value={expenseAmount} 
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="expenseCadence" className="text-sm font-medium text-gray-700">Cadenza</Label>
+                <Select value={expenseCadence} onValueChange={setExpenseCadence}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Seleziona cadenza" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensile</SelectItem>
+                    <SelectItem value="annual">Annuale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={addExpense} className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600">
+                <PlusCircle className="mr-2" /> Aggiungi Spesa
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-green-500 to-teal-500 text-white">
+            <CardTitle className="flex items-center text-xl">
+              <PlusCircle className="mr-2" />
+              Aggiungi Retribuzione
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="incomeName" className="text-sm font-medium text-gray-700">Nome Retribuzione</Label>
+                <Input 
+                  id="incomeName"
+                  value={incomeName} 
+                  onChange={(e) => setIncomeName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="incomeAmount" className="text-sm font-medium text-gray-700">Importo Lordo Annuale</Label>
+                <Input 
+                  id="incomeAmount"
+                  type="number" 
+                  value={incomeAmount} 
+                  onChange={(e) => setIncomeAmount(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  id="isTaxable" 
+                  checked={isTaxable}
+                  onChange={(e) => setIsTaxable(e.target.checked)}
+                  className="mr-2"
+                />
+                <Label htmlFor="isTaxable" className="text-sm font-medium text-gray-700">Applica tassazione (40%)</Label>
+              </div>
+              <Button onClick={addIncome} className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600">
+                <PlusCircle className="mr-2" /> Aggiungi Retribuzione
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 mb-8">
+        <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+          <CardTitle className="flex items-center text-xl">
+            <TrendingUp className="mr-2" />
+            Riepilogo Finanziario
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <Tabs defaultValue="annual">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="annual">Annuale</TabsTrigger>
+              <TabsTrigger value="monthly">Mensile</TabsTrigger>
+            </TabsList>
+            <TabsContent value="annual" className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                <span className="font-medium">Totale Spese Annuali:</span>
+                <span className="text-red-600 font-bold">€{calculateAnnualExpenses().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                <span className="font-medium">Totale Retribuzioni Annuali (Netto):</span>
+                <span className="text-green-600 font-bold">€{calculateAnnualIncome().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-blue-100 rounded-lg">
+                <span className="font-medium">Bilancio Annuale:</span>
+                <span className={`font-bold ${(calculateAnnualIncome() - calculateAnnualExpenses()) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  €{(calculateAnnualIncome() - calculateAnnualExpenses()).toFixed(2)}
+                </span>
+              </div>
+            </TabsContent>
+            <TabsContent value="monthly" className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                <span className="font-medium">Totale Spese Mensili:</span>
+                <span className="text-red-600 font-bold">€{calculateMonthlyExpenses().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                <span className="font-medium">Totale Retribuzioni Mensili (Netto):</span>
+                <span className="text-green-600 font-bold">€{calculateMonthlyIncome().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-blue-100 rounded-lg">
+                <span className="font-medium">Bilancio Mensile:</span>
+                <span className={`font-bold ${(calculateMonthlyIncome() - calculateMonthlyExpenses()) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  €{(calculateMonthlyIncome() - calculateMonthlyExpenses()).toFixed(2)}
+                </span>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+          <CardTitle className="flex items-center text-xl">
+            <List className="mr-2" />
+            Riepilogo Dettagliato Mensile
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <ul className="space-y-2">
+            {getMonthlyDetails().map((item, index) => (
+              <li key={index} className="flex justify-between items-center p-2 bg-gray-100 rounded-lg">
+                <span className="font-medium">{item.name} ({item.type})</span>
+                <span className={`font-bold ${item.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  €{Math.abs(item.amount).toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default FinanceCalculator;
